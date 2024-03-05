@@ -78,15 +78,18 @@ void setupCustomKeybinds() {
     bool isVoiceActivated = false; // Flag to track voice activation state
 
     BindManager::get()->registerBindable({
-        "toggle-voice-activate"_spr,
+        "voice-activate"_spr,
         "Voice",
         "Records audio from your microphone and sends it off to other users on the level.",
         { Keybind::create(KEY_V, Modifier::None) },
         Category::PLAY,
         [&](const KeyState& state) {
             if (state == KeyState::Pressed) {
-                isVoiceActivated = !isVoiceActivated; // Toggle voice activation state
-                // Perform voice activation/deactivation logic based on isVoiceActivated
+                isVoiceActivated = true; // Activate voice when 'V' is pressed
+                // Perform voice activation logic
+            } else if (state == KeyState::Released) {
+                isVoiceActivated = false; // Deactivate voice when 'V' is released
+                // Perform voice deactivation logic
             }
         }
     });
@@ -98,7 +101,12 @@ void setupCustomKeybinds() {
         { Keybind::create(KEY_B, Modifier::None) },
         Category::PLAY,
     });
-#endif // GLOBED_HAS_KEYBINDS
+
+    // Function to get the current voice activation state
+    bool isVoiceActivated() const {
+        return isVoiceActivated;
+    }
+#endif
 }
 
 // just debug printing
