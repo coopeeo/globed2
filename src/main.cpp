@@ -11,6 +11,8 @@
 #include <managers/settings.hpp>
 #include <ui/error_check_node.hpp>
 #include <util/all.hpp>
+#include "Keybind.h"
+#include "BindManager.h"
 
 using namespace geode::prelude;
 
