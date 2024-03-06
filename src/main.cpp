@@ -11,8 +11,6 @@
 #include <managers/settings.hpp>
 #include <ui/error_check_node.hpp>
 #include <util/all.hpp>
-#include "Keybind.h"
-#include "BindManager.h"
 
 using namespace geode::prelude;
 
@@ -77,23 +75,12 @@ void setupCustomKeybinds() {
 #if GLOBED_HAS_KEYBINDS
     using namespace keybinds;
 
-    bool isVoiceActivated = false; // Flag to track voice activation state
-
     BindManager::get()->registerBindable({
         "voice-activate"_spr,
         "Voice",
         "Records audio from your microphone and sends it off to other users on the level.",
         { Keybind::create(KEY_V, Modifier::None) },
         Category::PLAY,
-        [&](const KeyState& state) {
-            if (state == KeyState::Pressed) {
-                isVoiceActivated = true; // Activate voice when 'V' is pressed
-                // Perform voice activation logic
-            } else if (state == KeyState::Released) {
-                isVoiceActivated = false; // Deactivate voice when 'V' is released
-                // Perform voice deactivation logic
-            }
-        }
     });
 
     BindManager::get()->registerBindable({
@@ -103,12 +90,7 @@ void setupCustomKeybinds() {
         { Keybind::create(KEY_B, Modifier::None) },
         Category::PLAY,
     });
-
-    // Function to get the current voice activation state
-    bool isVoiceActivated() const {
-        return isVoiceActivated;
-    }
-#endif
+#endif // GLOBED_HAS_KEYBINDS
 }
 
 // just debug printing
