@@ -37,8 +37,6 @@ float adjustLerpTimeDelta(float dt) {
 bool GlobedPlayLayer::init(GJGameLevel* level, bool p1, bool p2) {
     if (!PlayLayer::init(level, p1, p2)) return false;
 
-    m_fields->initialTestMode = m_isTestMode;
-
     GlobedSettings& settings = GlobedSettings::get();
 
     auto winSize = CCDirector::get()->getWinSize();
@@ -160,16 +158,16 @@ bool GlobedPlayLayer::init(GJGameLevel* level, bool p1, bool p2) {
         self->scheduleOnce(schedule_selector(GlobedPlayLayer::postInitActions), 0.25f);
     });
 
-    m_fields->progressBarWrapper = Build<CCNode>::create()
+    Build<CCNode>::create()
         .id("progress-bar-wrapper"_spr)
         .visible(settings.levelUi.progressIndicators)
         .zOrder(-1)
-        .collect();
+        .store(m_fields->progressBarWrapper);
 
-    m_fields->selfProgressIcon = Build<PlayerProgressIcon>::create()
+    Build<PlayerProgressIcon>::create()
         .parent(m_fields->progressBarWrapper)
         .id("self-player-progress"_spr)
-        .collect();
+        .store(m_fields->selfProgressIcon);
 
     m_fields->selfProgressIcon->updateIcons(ProfileCacheManager::get().getOwnData());
     m_fields->selfProgressIcon->setForceOnTop(true);
@@ -190,6 +188,12 @@ bool GlobedPlayLayer::init(GJGameLevel* level, bool p1, bool p2) {
     return true;
 }
 
+void GlobedPlayLayer::setupHasCompleted() {
+    PlayLayer::setupHasCompleted();
+    m_fields->initialTestMode = m_isTestMode;
+    m_fields->setupWasCompleted = true;
+}
+
 void GlobedPlayLayer::postInitActions(float) {
     auto& nm = NetworkManager::get();
     nm.send(RequestPlayerProfilesPacket::create(0));
@@ -200,26 +204,7 @@ void GlobedPlayLayer::postInitActions(float) {
 
 void GlobedPlayLayer::onQuit() {
     PlayLayer::onQuit();
-
-    if (!m_fields->globedReady) return;
-
-    auto& nm = NetworkManager::get();
-    if (!nm.established()) return;
-
-    // send LevelLeavePacket
-    nm.send(LevelLeavePacket::create());
-
-#ifdef GLOBED_VOICE_SUPPORT
-    // stop voice recording and playback
-    GlobedAudioManager::get().haltRecording();
-    VoicePlaybackManager::get().stopAllStreams();
-#endif // GLOBED_VOICE_SUPPORT
-
-    // clean up the listeners
-    nm.removeListener<PlayerProfilesPacket>(util::time::seconds(3));
-    nm.removeListener<LevelDataPacket>(util::time::seconds(3));
-    nm.removeListener<LevelPlayerMetadataPacket>(util::time::seconds(3));
-    nm.removeListener<VoiceBroadcastPacket>(util::time::seconds(3));
+    this->onQuitActions();
 }
 
 void GlobedPlayLayer::setupPacketListeners() {
@@ -286,7 +271,7 @@ void GlobedPlayLayer::fullReset() {
 void GlobedPlayLayer::resetLevel() {
     PlayLayer::resetLevel();
     // this is also called upon init, so bail out if we are too early
-    if (m_fields->timeCounter < 0.25f) return;
+    if (!m_fields->setupWasCompleted) return;
 
     if (!m_level->isPlatformer()) {
         // turn off safe mode in non-platformer levels (as this counts as a full reset)
@@ -300,7 +285,6 @@ void GlobedPlayLayer::showNewBest(bool p0, int p1, int p2, bool p3, bool p4, boo
 }
 
 void GlobedPlayLayer::levelComplete() {
-    log::debug("level complete, should stop: {}", this->isSafeMode());
     if (!this->isSafeMode()) PlayLayer::levelComplete();
     else GlobedPlayLayer::onQuit();
 }
@@ -562,6 +546,31 @@ void GlobedPlayLayer::toggleSafeMode(bool enabled) {
 
 bool GlobedPlayLayer::isSafeMode() {
     return static_cast<HookedGJGameLevel*>(m_level)->m_fields->shouldStopProgress;
+}
+
+void GlobedPlayLayer::onQuitActions() {
+    auto& nm = NetworkManager::get();
+
+    if (m_fields->globedReady) {
+        if (nm.established()) {
+            // send LevelLeavePacket
+            nm.send(LevelLeavePacket::create());
+        }
+
+#ifdef GLOBED_VOICE_SUPPORT
+        // stop voice recording and playback
+        GlobedAudioManager::get().haltRecording();
+        VoicePlaybackManager::get().stopAllStreams();
+#endif // GLOBED_VOICE_SUPPORT
+
+        log::debug("remove listeberes");
+
+        // clean up the listeners
+        nm.removeListener<PlayerProfilesPacket>(util::time::seconds(3));
+        nm.removeListener<LevelDataPacket>(util::time::seconds(3));
+        nm.removeListener<LevelPlayerMetadataPacket>(util::time::seconds(3));
+        nm.removeListener<VoiceBroadcastPacket>(util::time::seconds(3));
+    }
 }
 
 bool GlobedPlayLayer::shouldLetMessageThrough(int playerId) {
