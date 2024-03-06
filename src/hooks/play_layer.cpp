@@ -320,7 +320,10 @@ void GlobedPlayLayer::setupCustomKeybinds() {
                 GlobedAudioManager::get().resumePassiveRecording();
             }
         } else {
-            GlobedAudioManager::get().pausePassiveRecording();
+            //GlobedAudioManager::get().pausePassiveRecording();
+            if (!this->m_fields->deafened) {
+                GlobedAudioManager::get().resumePassiveRecording();
+            }
         }
 
         return ListenerResult::Stop;
