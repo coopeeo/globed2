@@ -6,10 +6,10 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 project(globed2 VERSION 1.0.1)
 
 # set ios archs
-if (${CMAKE_SYSTEM_NAME} STREQUAL "iOS")
+if (${GEODE_TARGET_PLATFORM} STREQUAL "iOS" OR IOS)
     message(STATUS "building for ios :3")
     unset(CMAKE_OSX_ARCHITECTURES)
-    set(CMAKE_OSX_ARCHITECTURES "arm64")
+    set(CMAKE_OSX_ARCHITECTURES arm64)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0")
     set(CMAKE_SYSTEM_NAME "iOS")
 else()
